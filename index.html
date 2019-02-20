@@ -16,7 +16,7 @@ link.href = window.location.search.match( /print-pdf/gi ) ? "reveal.js-3.7.0//cs
 document.getElementsByTagName( 'head' )[0].appendChild( link );</script><!--[if lt IE 9]><script src="reveal.js-3.7.0//lib/js/html5shiv.js"></script><![endif]--></head><body><div class="reveal"><div class="slides"><section class="title" data-state="title"><h1>Task- und Datenparallelität mit Rust</h1></section><section><table class="tableblock frame-all grid-all" style="width:100%"><colgroup><col style="width:50%"><col style="width:50%"></colgroup><thead><tr><th class="tableblock halign-left valign-top">Stefan Lankes</th><th class="tableblock halign-left valign-top">Jens Breitbart</th></tr><tbody><tr><td class="tableblock halign-left valign-top"><p class="tableblock"><span class="image"><img src="images/stl.png" alt="stl" width="100"></span></p></td><td class="tableblock halign-left valign-top"><p class="tableblock"><span class="image"><img src="images/jbreitbart.png" alt="jbreitbart" width="100"></span></p></td></tr><tr><td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/stlankes">github.com/stlankes</a></p></td><td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/jbreitbart">github.com/jbreitbart</a></p></td></tr><tr><td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://rwth-os.github.io/eduOS-rs/">eduOS-rs</a>,  <a href="http://www.hermitcore.org">HermitCore</a></p></td><td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.jensbreitbart.de/">jensbreitbart.de</a></p></td></tr><tr><td class="tableblock halign-left valign-top"><p class="tableblock">System Software @ RWTH</p></td><td class="tableblock halign-left valign-top"><p class="tableblock"><em>Here for fun and no profit</em></p></td></tr></table>
 <aside class="notes"><div class="paragraph"><p>Stefan stellt sich vor, Jens fängt an</p></div>
 <div class="paragraph"><p>Nach der Vorstellung fragen:
-* Wer weiß was Rust ist? 
+* Wer weiß was Rust ist?
 * Wer hat schonmal Rust Code gesehen?
 * Wer hat versucht welchen zu schreiben?
 * Wessen Code hat compiliert?</p></div></aside></section>
@@ -115,7 +115,7 @@ pub struct NBody {
 		f += diff*power;
 	});
 	*item_vi += f*DELTA_T;
-});</code></pre></div></div></section><section id="array_of_structures"><h2>Array of Structures</h2><div class="ulist"><ul><li><p>Bisherige Lösung ist anschaulich, aber nicht für SIMD geeignet</p></li><li><p><code>Vec</code> liegt nicht zwingend kontinuierlich im Speicher</p></li><li><p>Auch einzelne Komponenten (z.B. alle <code>x</code>-Einträge) sind nicht kontinuierlich</p></li><li><p><strong>Idee:</strong> Structure of Arrays</p></li></ul></div>
+});</code></pre></div></div></section><section id="array_of_structures"><h2>Array of Structures</h2><div class="ulist"><ul><li><p>Bisherige Lösung ist anschaulich, aber nicht für SIMD geeignet</p></li><li><p>Einzelne Komponenten (z.B. alle <code>x</code>-Einträge) liege nicht kontinuierlich im Speicher</p></li><li><p>Alignment nicht zwingend garantiert</p></li><li><p><strong>Idee:</strong> Structure of Arrays</p></li></ul></div>
 <div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">#[derive(Clone, Debug, PartialEq)]
 pub struct NBody {
 	pub position: Vec&lt;Vector&lt;Precision&gt;&gt;,
@@ -131,7 +131,7 @@ typedef struct {
 	Scalar vy[nParticles];
 	Scalar vz[nParticles];
 } NBody;</code></pre></div></div></section></section>
-<section><section id="simd_programmierung"><h2>SIMD-Programmierung</h2><div class="ulist"><ul><li><p>Mögliche Lösungen (allgemein, nicht Rust)</p><div class="ulist"><ul><li><p>Optimierungen durch den Compiler (häufig nicht optimal)</p></li><li><p>Hinweise an den Compiler (z.B. OpenMP)</p></li><li><p>Direkte Programmierung durch Intrinsics</p></li></ul></div></li></ul></div><div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="C language-C">// Entspricht direkter Assembler-Progrommierung
+<section><section id="simd_programmierung"><h2>SIMD-Programmierung</h2><div class="ulist"><ul><li><p>Mögliche Lösungen (allgemein)</p><div class="ulist"><ul><li><p>Optimierungen durch den Compiler (häufig nicht optimal)</p></li><li><p>Hinweise an den Compiler (z.B. OpenMP)</p></li><li><p>Direkte Programmierung durch Intrinsics</p></li></ul></div></li></ul></div><div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="C language-C">// Entspricht direkter Assembler-Progrommierung
 __m256 _mm256_add_ps (__m256 a, __m256 b);</code></pre></div></div></section><section id="packed_simd"><h2><code>packed_simd</code></h2><div class="ulist"><ul><li><p>Portable SIMD-Vektoren durch <a href="https://github.com/rust-lang-nursery/packed_simd"><code>packed-simd</code></a></p></li><li><p>Zurzeit nur mit dem <code>nightly</code>-Compiler verwendbar</p></li><li><p>Einführung neuer Typen, welche SIMD-Register entsprechen</p></li><li><p>Standard-Operatoren existieren bereits für diese Typen</p></li></ul></div>
 <div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">// Vektor-Addition mit 8 einfach, genaue Fließkommazahlen
 pub fn sum(a: f32x8, b: f32x8) -&gt; f32x8 {
