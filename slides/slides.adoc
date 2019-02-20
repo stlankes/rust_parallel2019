@@ -580,7 +580,7 @@ position.iter().zip(velocity.iter_mut()).par_bridge()
 // Mal schauen ob wir das hier brauchen
 // *  [T]::split_at_mut() oder [T]::chunks() um gemeinsame Datenstrukturen aufzuteilen für den borrow checker
 
-=== Performance
+=== Performance / Traue keiner Statistik
 
 image::images/nbody_results.png[width=600]
 
