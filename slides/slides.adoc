@@ -377,8 +377,8 @@ position.par_iter().zip(velocity.par_iter_mut())
 === Array of Structures
 
 * Bisherige Lösung ist anschaulich, aber nicht für SIMD geeignet
-* `Vec` liegt nicht zwingend kontinuierlich im Speicher
-* Auch einzelne Komponenten (z.B. alle `x`-Einträge) sind nicht kontinuierlich
+* Einzelne Komponenten (z.B. alle `x`-Einträge) liege nicht kontinuierlich im Speicher
+* Alignment nicht zwingend garantiert
 * *Idee:* Structure of Arrays
 
 [source, Rust]
@@ -412,7 +412,7 @@ typedef struct {
 
 == SIMD-Programmierung
 
-* Mögliche Lösungen (allgemein, nicht Rust)
+* Mögliche Lösungen (allgemein)
 ** Optimierungen durch den Compiler (häufig nicht optimal)
 ** Hinweise an den Compiler (z.B. OpenMP)
 ** Direkte Programmierung durch Intrinsics
