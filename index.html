@@ -1,0 +1,351 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Task- und Datenparallelität mit Rust</title><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui" name="viewport"><link href="reveal.js-3.7.0//css/reveal.css" rel="stylesheet"><link rel="stylesheet" href="reveal.js-3.7.0//css/theme/solarized.css" id="theme"><script type="text/x-mathjax-config">MathJax.Hub.Config({
+tex2jax: {
+  inlineMath: [["\\(", "\\)"]],
+  displayMath: [["\\[", "\\]"]],
+  ignoreClass: "nostem|nolatexmath"
+},
+asciimath2jax: {
+  delimiters: [["\\$", "\\$"]],
+  ignoreClass: "nostem|noasciimath"
+},
+TeX: { equationNumbers: { autoNumber: "none" } }
+});</script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.4.0/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script><link href="solarized-dark.css" rel="stylesheet"><script>var link = document.createElement( 'link' );
+link.rel = 'stylesheet';
+link.type = 'text/css';
+link.href = window.location.search.match( /print-pdf/gi ) ? "reveal.js-3.7.0//css/print/pdf.css" : "reveal.js-3.7.0//css/print/paper.css";
+document.getElementsByTagName( 'head' )[0].appendChild( link );</script><!--[if lt IE 9]><script src="reveal.js-3.7.0//lib/js/html5shiv.js"></script><![endif]--></head><body><div class="reveal"><div class="slides"><section class="title" data-state="title"><h1>Task- und Datenparallelität mit Rust</h1></section><section><table class="tableblock frame-all grid-all" style="width:100%"><colgroup><col style="width:50%"><col style="width:50%"></colgroup><thead><tr><th class="tableblock halign-left valign-top">Stefan Lankes</th><th class="tableblock halign-left valign-top">Jens Breitbart</th></tr><tbody><tr><td class="tableblock halign-left valign-top"><p class="tableblock"><span class="image"><img src="images/stl.png" alt="stl" width="100"></span></p></td><td class="tableblock halign-left valign-top"><p class="tableblock"><span class="image"><img src="images/jbreitbart.png" alt="jbreitbart" width="100"></span></p></td></tr><tr><td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/stlankes">github.com/stlankes</a></p></td><td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/jbreitbart">github.com/jbreitbart</a></p></td></tr><tr><td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://rwth-os.github.io/eduOS-rs/">eduOS-rs</a>,  <a href="http://www.hermitcore.org">HermitCore</a></p></td><td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://www.jensbreitbart.de/">jensbreitbart.de</a></p></td></tr><tr><td class="tableblock halign-left valign-top"><p class="tableblock">System Software @ RWTH</p></td><td class="tableblock halign-left valign-top"><p class="tableblock"><em>Here for fun and no profit</em></p></td></tr></table>
+<aside class="notes"><div class="paragraph"><p>Stefan stellt sich vor, Jens fängt an</p></div>
+<div class="paragraph"><p>Nach der Vorstellung fragen:
+* Wer weiß was Rust ist?
+* Wer hat schonmal Rust Code gesehen?
+* Wer hat versucht welchen zu schreiben?
+* Wessen Code hat compiliert?</p></div></aside></section>
+<section id="hinweise_zum_vortrag"><h2>Hinweise zum Vortrag</h2><div class="ulist"><ul><li><p>Folien: <a href="https://stlankes.github.io/rust_parallel2019/" class="bare">https://stlankes.github.io/rust_parallel2019/</a></p></li><li><p>Beispiele: <a href="https://github.com/stlankes/rust_parallel2019" class="bare">https://github.com/stlankes/rust_parallel2019</a></p></li><li><p>Einstieg: <a href="https://www.rust-lang.org" class="bare">https://www.rust-lang.org</a></p></li><li><p>Playground: <a href="https://play.rust-lang.org" class="bare">https://play.rust-lang.org</a></p></li><li><p>Tutorial: <a href="https://rustbyexample.com" class="bare">https://rustbyexample.com</a></p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="bash language-bash">curl https://sh.rustup.rs -sSf | sh</code></pre></div></div>
+<aside class="notes"></aside></section>
+<section><section id="was_ist_rust"><h2>Was ist Rust?</h2><div class="paragraph"><p>Rust ist eine (relativ) neue Programmiersprache für systemnahe Software</p></div><div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">fn main() {
+    // Die Statements werden ausgeführt sobald
+    // das compilierte Binary gestartet wird.
+
+    // Ausgabe auf stdout
+    println!("Hello para//el 2019!");
+}</code></pre></div></div><div class="paragraph"><p>Bekannt u.a. für den Einsatz in Firefox</p></div><div class="paragraph"><p>&#8658; Rust Code läuft somit auf Millionen von Rechnern</p></div><aside class="notes"><div class="paragraph"><p>C-Ähnliche Syntax
+! ist ein Macro, aber wir tun hier so als wäre es eine Funktion
+&#8658; Eigentlich Code der Code schreibt</p></div>
+<div class="paragraph"><p>Nicht nur Einsatz in Firefox:
+* game engines
+* operating systems
+* file systems</p></div></aside></section><section id="woher_kommt_rust"><h2>Woher kommt Rust?</h2><div class="imageblock" style=""><img src="images/rust.png" alt="rust" width="150"></div>
+<div class="ulist"><ul><li><p>Rust ist ein open-source (MIT + Apache) Projekt</p></li><li><p>Wird aktuell primär von Mozilla Research gesponsort</p></li><li><p>Die Weiterentwicklung selbst wird allerdings stark durch die Community getrieben</p></li></ul></div>
+<aside class="notes"><div class="paragraph"><p>Gibt nur eine Implementierung.
+LLVM Compiler</p></div></aside></section><section id="vorteile_von_rust"><h2>Vorteile von Rust</h2><div class="ulist"><ul><li><p>C/C++ ähnliche Performance</p><div class="ulist"><ul><li><p><a href="https://benchmarksgame-team.pages.debian.net/benchmarksgame/faster/rust-gpp.html">Link zu Vergleichsmessungen</a></p></li></ul></div></li><li><p>Compilerbasierte Überprüfungen welche z.B.</p><div class="ulist"><ul><li><p>Speichersicherheit (ohne Garbage Collection) garantieren</p></li><li><p>Data Races verhindern</p></li></ul></div></li></ul></div>
+<div class="paragraph"><p>&#8658; <em>Falscher</em> Code compiliert nicht</p></div>
+<aside class="notes"><div class="paragraph"><p>Performance: Grundsätzlich kein Grund wieso es langsamer als C sein sollte</p></div>
+<div class="paragraph"><p>Link zu Computer Language Benchmarks Game</p></div></aside></section></section>
+<section id="inhaltsbersicht"><h2>Inhaltsübersicht</h2><div class="ulist"><ul><li><p>Rayon</p></li><li><p>SIMD</p></li><li><p>Tokio.rs</p></li></ul></div>
+<div class="paragraph"><p>Keine Einfühung zu Threads in Rust, siehe dafür z.B. <a href="https://www.heise.de/developer/artikel/Rust-als-sichere-Programmiersprache-fuer-systemnahe-und-parallele-Software-4155591.html">Heise Developer</a></p></div>
+<aside class="notes"><div class="paragraph"><p>Rayon, SIMD: Klassische parallelität
+Tokio.rs: Nebenläufigkeit (Async I/O)</p></div>
+<div class="paragraph"><p>Nächste Folie: Stefan</p></div></aside></section>
+<section><section id="rayon_parallelism_in_rust"><h2>Rayon: Parallelism in Rust</h2><div class="ulist"><ul><li><p><a href="https://github.com/rayon-rs/rayon" class="bare">https://github.com/rayon-rs/rayon</a></p></li><li><p>Unterstützt parallele Berechungen auf Basis von Task-Parallelität, Fork-Join-Prinzipien und <em>Work Stealing</em></p><div class="ulist"><ul><li><p>Ähnlich zu Cilk (daher auch der Name)</p></li></ul></div></li><li><p>Bietet aber auch Daten-Parallelität über Iteratoren an</p></li></ul></div><aside class="notes"><div class="paragraph"><p>rayon == Kunstseide
+silk == Seide
+Eingesetzt in firefox
+Automatische Lastbalanzierung</p></div></aside></section><section id="zielsetzung_von_rayon_i"><h2>Zielsetzung von Rayon (I)</h2><div class="ulist"><ul><li><p><a href="https://github.com/rayon-rs/rayon">Zitat:</a> Rayon is a data-parallelism library for Rust. It is extremely lightweight and makes it easy to convert a sequential computation into a parallel one. It also guarantees data-race freedom.</p><div class="ulist"><ul><li><p>Compiler erkennt mehrfach Benutzung</p><div class="ulist"><ul><li><p>Es kann nur einen (Owner) geben</p></li></ul></div></li><li><p>Zudem müssen Datentypen als <strong>Threadsafe</strong> definiert werden</p></li></ul></div></li></ul></div></section><section id="zielsetzung_von_rayon_ii"><h2>Zielsetzung von Rayon (II)</h2><div class="ulist"><ul><li><p>Einführung spezieller <em>Traits</em>, um Threadsicherheit zu gewährleisten.</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">// A type is `Send` if it is safe to send it to another thread.
+// A type is `Sync` if it is safe to share between threads.
+
+fn foo&lt;T:Send+Sync&gt;(value: T) {
+	...
+}</code></pre></div></div></section><section id="beispiel_n_body"><h2>Beispiel: N-Body</h2><div class="ulist"><ul><li><p>Interative Berechnung der Gravitations- bzw. Coulomb-Kraft zwischen Partikeln im Raum.</p></li><li><p>Kraft: \(\vec{F}(n+1)=\vec{r}(n) \cdot |\vec{r}(n)|^{-3/2}\)</p></li><li><p>Geschwindigkeit: \(\vec{v}(n+1)=\Delta t \cdot \vec{F}(n+1) + \vec{v}(n)\)</p></li><li><p>Position: \(\vec{x}(n+1)=\Delta t \cdot \vec{v}(n+1) + \vec{x}(n)\)</p></li><li><p>Nur zum Erläutern der Prinzipien</p></li><li><p>Besser <a href="https://github.com/fbaru-dev/nbody-demo">optimierte Lösungen</a> verfügbar</p></li></ul></div></section><section id="n_body"><h2>N-Body</h2><div class="imageblock" style=""><img src="images/nbody.gif" alt="N-Body" width="60%"></div></section><section id="n_body_naive_lsung"><h2>N-Body: Naive Lösung</h2><div class="ulist"><ul><li><p>Ein Körper wird beschrieben durch seine Postion sowie seine Geschwindigkeit</p></li><li><p>Position und Geschwindigkeit sind Vektoren im 3-dimensionalen Raum</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">#[derive(Copy, Clone, Debug)]
+pub struct Vector&lt;T&gt; {
+	pub x: T,
+	pub y: T,
+	pub z: T
+}</code></pre></div></div></section><section id="n_body_vektor_operationen"><h2>N-Body: Vektor-Operationen</h2><div class="ulist"><ul><li><p>Für diese Vektoren müssen die Vektor-Operation definiert werden</p><div class="ulist"><ul><li><p>Hier selber geschrieben</p></li><li><p>Standard-Implementierungen (z.B. <a href="https://github.com/rustgd/cgmath">cgmath</a>) sind verfügbar</p></li></ul></div></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">/// Definition des Operators +=
+impl&lt;T: Add&lt;Output=T&gt; + AddAssign&gt; AddAssign for Vector&lt;T&gt; {
+	fn add_assign(&amp;mut self, other: Vector&lt;T&gt;) {
+		self.x += other.x;
+		self.y += other.y;
+		self.z += other.z;
+	}
+}</code></pre></div></div></section><section id="n_body_vektor_operationen_2"><h2>N-Body: Vektor-Operationen</h2><div class="ulist"><ul><li><p>Die Körper werden durch ein zusammenhängender, erweiterbarer Feld-Typ, <code>Vec&lt;T&gt;</code> beschrieben.</p></li><li><p>Teil der Standard-Laufzeitumgebung</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">#[derive(Clone, Debug, PartialEq)]
+pub struct NBody {
+	pub position: Vec&lt;Vector&lt;Precision&gt;&gt;,
+	pub velocity: Vec&lt;Vector&lt;Precision&gt;&gt;
+}</code></pre></div></div></section><section id="n_body_algorithmus"><h2>N-Body: Algorithmus</h2><div class="ulist"><ul><li><p>Abstand zwischen allen Körper bestimmen</p></li><li><p>Kraft herleiten, Geschwindigkeit und Position neu bestimmen</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">position.iter().zip(velocity.iter_mut())
+  .for_each(|(item_pi, item_vi)| {
+	let mut f: Vector&lt;Precision&gt; = Vector::new(0.0, 0.0, 0.0);
+
+	position.iter().for_each(|item_pj| {
+		// Newton’s law of universal gravity calculation.
+		let diff = *item_pj - *item_pi;
+		let n2 = diff * diff;
+		let power = 1.0 / (n2.sqrt() * n2);
+		f += diff*power;
+	});
+	*item_vi += f*DELTA_T;
+});</code></pre></div></div></section><section id="n_body_trick"><h2>N-Body: Trick</h2><div class="ulist"><ul><li><p>2 Iteratoren über die Geschwindigkeit und Position im Gleichschritt bewegen &#8658; <code>zip</code>-Operator in Rust</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">position.iter().zip(velocity.iter_mut())
+  .for_each(|(item_pi, item_vi)| {
+	let mut f: Vector&lt;Precision&gt; = Vector::new(0.0, 0.0, 0.0);
+
+	position.iter().for_each(|item_pj| {
+		// Newton’s law of universal gravity calculation.
+		let diff = *item_pj - *item_pi;
+		let n2 = diff * diff;
+		let power = 1.0 / (n2.sqrt() * n2);
+		f += diff*power;
+	});
+
+	*item_vi += f*DELTA_T;
+});</code></pre></div></div></section><section id="parallelisierung_mit_rayon"><h2>Parallelisierung mit Rayon</h2><div class="ulist"><ul><li><p>Definition von parallelen Itertoren (ähnlich zu <a href="https://www.threadingbuildingblocks.org">TBB</a>)</p></li><li><p>Stehen für alle Algorithem aus der Standardumgebung zur Verfügung</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">position.par_iter().zip(velocity.par_iter_mut())
+  .for_each(|(item_pi, item_vi)| {
+	let mut f: Vector&lt;Precision&gt; = Vector::new(0.0, 0.0, 0.0);
+
+	position.iter().for_each(|item_pj| {
+		// Newton’s law of universal gravity calculation.
+		let diff = *item_pj - *item_pi;
+		let n2 = diff.square();
+		let power = 1.0 / (n2.sqrt() * n2);
+		f += diff*power;
+	});
+	*item_vi += f*DELTA_T;
+});</code></pre></div></div></section><section id="array_of_structures"><h2>Array of Structures</h2><div class="ulist"><ul><li><p>Bisherige Lösung ist anschaulich, aber nicht für SIMD geeignet</p></li><li><p><code>Vec</code> liegt nicht zwingend kontinuierlich im Speicher</p></li><li><p>Auch einzelne Komponenten (z.B. alle <code>x</code>-Einträge) sind nicht kontinuierlich</p></li><li><p><strong>Idee:</strong> Structure of Arrays</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">#[derive(Clone, Debug, PartialEq)]
+pub struct NBody {
+	pub position: Vec&lt;Vector&lt;Precision&gt;&gt;,
+	pub velocity: Vec&lt;Vector&lt;Precision&gt;&gt;
+}</code></pre></div></div></section><section id="structure_of_arrays"><h2>Structure of Arrays</h2><div class="ulist"><ul><li><p>Statt je Körper eine Struktur in einem Array abzulegen, wird eine Struktur von Arrays angelegt</p><div class="ulist"><ul><li><p>Mögliche Optimierung von Vektor-Operationen</p></li></ul></div></li><li><p>Typische Lösung in C</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="C language-C">typedef float Scalar;
+
+typedef struct {
+	Scalar x[nParticles];
+	Scalar y[nParticles];
+	Scalar z[nParticles];
+	Scalar vx[nParticles];
+	Scalar vy[nParticles];
+	Scalar vz[nParticles];
+} NBody;</code></pre></div></div></section></section>
+<section><section id="simd_programmierung"><h2>SIMD-Programmierung</h2><div class="ulist"><ul><li><p>Mögliche Lösungen (allgemein, nicht Rust)</p><div class="ulist"><ul><li><p>Optimierungen durch den Compiler (häufig nicht optimal)</p></li><li><p>Hinweise an den Compiler (z.B. OpenMP)</p></li><li><p>Direkte Programmierung durch Intrinsics</p></li></ul></div></li></ul></div><div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="C language-C">// Entspricht direkter Assembler-Progrommierung
+__m256 _mm256_add_ps (__m256 a, __m256 b);</code></pre></div></div></section><section id="packed_simd"><h2><code>packed_simd</code></h2><div class="ulist"><ul><li><p>Portable SIMD-Vektoren durch <a href="https://github.com/rust-lang-nursery/packed_simd"><code>packed-simd</code></a></p></li><li><p>Zurzeit nur mit dem <code>nightly</code>-Compiler verwendbar</p></li><li><p>Einführung neuer Typen, welche SIMD-Register entsprechen</p></li><li><p>Standard-Operatoren existieren bereits für diese Typen</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">// Vektor-Addition mit 8 einfach, genaue Fließkommazahlen
+pub fn sum(a: f32x8, b: f32x8) -&gt; f32x8 {
+	a+b
+}</code></pre></div></div></section><section id="structure_of_arrays_in_rust"><h2>Structure of Arrays in Rust</h2><div class="ulist"><ul><li><p><code>T</code> ist hier ein SIMD-Datentyp (z.B. <code>f32x8</code>)</p></li><li><p>Es fehlt ein Iterator, um parallel über <code>x</code>, <code>y</code> und <code>z</code> zu wandern</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">pub struct Array&lt;T&gt;([T; N_PARTICLES_SOA]);
+
+pub struct StructOfArrays&lt;T&gt; {
+	pub x: Array&lt;T&gt;,
+	pub y: Array&lt;T&gt;,
+	pub z: Array&lt;T&gt;
+}
+
+pub struct NBodySoA {
+	position: StructOfArrays&lt;PrecisionSoA&gt;,
+	velocity: StructOfArrays&lt;PrecisionSoA&gt;
+}</code></pre></div></div></section><section id="neuer_iterator"><h2>Neuer Iterator</h2><div class="ulist"><ul><li><p>Aktuelle Position (<code>pos</code>) festhalten und auswerten</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">pub struct StructOfArraysIter&lt;'a, T: 'a&gt; {
+	inner: &amp;'a StructOfArrays&lt;T&gt;,
+	pos: usize, len: usize
+}
+
+impl&lt;'a, T&gt; Iterator for StructOfArraysIter&lt;'a, T&gt; {
+	type Item = (&amp;'a T, &amp;'a T, &amp;'a T);
+	fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt; {
+		if self.pos &lt; self.len {
+			let result = (&amp;self.inner.x.0[self.pos],
+				      &amp;self.inner.y.0[self.pos],
+				      &amp;self.inner.z.0[self.pos]);
+			self.pos += 1;
+			Some(result)
+	} } }</code></pre></div></div></section><section id="anpassung_des_algorithmuses"><h2>Anpassung des Algorithmuses</h2><div class="ulist"><ul><li><p>Iteratoren liefern nun <code>(x, y, z)</code> zurück.</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">position.iter().zip(velocity.iter_mut())
+  .for_each(|((pix, piy, piz), (vix, viy, viz))| {
+	let mut fx: PrecisionSoA = ...
+	position.iter().for_each(|(pjx, pjy, pjz)| {
+		let mut dx: ...
+		for lane in 0..PrecisionSoA::lanes() {
+			dx +=  *pjx - PrecisionSoA::splat(pix.extract(lane));
+			dy +=  ..
+		}
+		let n2 = dx*dx + dy*dy + dz*dz;
+		let power = 1.0 / (n2.sqrt() * n2);
+		fx += dx*power; fy += dy*power; fz += dz*power;
+	});
+	*vix += fx * dt; *viy += fy * dt; *viz += fz * dt;
+});</code></pre></div></div></section><section id="paralleler_algorithmus"><h2>Paralleler Algorithmus</h2><div class="ulist"><ul><li><p>Parallele Iteratoren existiert nicht für eigene Iteratoren</p></li><li><p>Lösung:</p><div class="ulist"><ul><li><p>Selber definieren</p></li><li><p>Oder aus <em>sequentielle</em> Iteratoren ableiten</p><div class="ulist"><ul><li><p>Eventuell sind diese nicht optimal</p></li></ul></div></li></ul></div></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">position.iter().zip(velocity.iter_mut()).par_bridge()
+  .for_each(|((pix, piy, piz), (vix, viy, viz))| {
+	..
+}</code></pre></div></div></section><section id="performance_traue_keiner_statistik"><h2>Performance / Traue keiner Statistik</h2><div class="imageblock" style=""><img src="images/nbody_results.png" alt="nbody results" width="600"></div></section></section>
+<section><section id="tokio_rs"><h2>tokio.rs</h2><div class="ulist"><ul><li><p>Eine Bibliothek für Nebenläufigkeit</p><div class="ulist"><ul><li><p>basierend auf <code>Futures</code></p></li><li><p>und einer Laufzeitumgebung</p></li></ul></div></li><li><p>Anwendungsgebiet: asynchrones I/O</p></li><li><p><a href="https://tokio.rs/">Link</a></p></li></ul></div><aside class="notes"><div class="paragraph"><p>Rusts Lösung für das 'C10K Problem'
+Idee: Man baut eine State Machine über Futures auf und die Laufzeitumgebung arbeitet sie ab.
+Achtung: Sieht alles funktional aus!</p></div></aside></section><section id="laufzeitumgebung"><h2>Laufzeitumgebung</h2><div class="ulist"><ul><li><p>Multithreaded + work stealing</p><div class="ulist"><ul><li><p>Multiplexing</p></li></ul></div></li><li><p>Futures sind <code>poll</code>-basiert</p><div class="ulist"><ul><li><p>Backpressure im allgemeinen kein Problem</p></li><li><p>Unnötige Futures werden automatisch verworfen und erzeugen keine Last</p></li></ul></div></li></ul></div>
+<aside class="notes"><div class="paragraph"><p>Aufräumen im allgemeinen nur für ressourcen</p></div></aside></section><section id="beispiel_client_server"><h2>Beispiel: Client / Server</h2><div class="ulist"><ul><li><p>Einfacher TCP Client und Server</p><div class="ulist"><ul><li><p>Client sendet viele Anfragen parallel</p></li><li><p>Server sendet empfangene Daten wieder zurück</p></li></ul></div></li><li><p>Idee</p><div class="ulist"><ul><li><p>Eine Task pro Anfrage</p></li><li><p>Wechsel der Task, wenn sie nichts tun kann</p></li></ul></div></li></ul></div></section><section id="server_i"><h2>Server (i)</h2><div class="ulist"><ul><li><p>Unendlicher Stream an Verbindungen</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">let listener = TcpListener::bind(&amp;addr).unwrap();
+let server = listener
+    .incoming()
+    .for_each(|socket| {
+        // für jede Verbindung
+        // siehe nächste Folie
+    })
+    .map_err(|err| {
+        // Fehlerbehandlung
+        println!("accept error = {:?}", err);
+    });
+tokio::run(server);</code></pre></div></div>
+<aside class="notes"><div class="paragraph"><p>listener teil von tokio, aber nicht blockierend
+server ist unendlicher stream, ein eintrag pro Verbindung
+tokio::run startet die laufzeitumgebung</p></div></aside></section><section id="server_ii_pro_verbindung"><h2>Server (ii) - pro Verbindung</h2><div class="ulist"><ul><li><p>Wird ausgeführt sobald eine Verbindung aufgebaut wurde</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape>let (reader, writer) = socket.split();
+let amountF = io::copy(reader, writer);
+
+let msg = amountF.then(|result| {
+    match result {
+        Ok((amount, _, _)) =&gt; println!("wrote {} bytes", amount),
+        Err(e) =&gt; println!("error: {}", e),
+    }
+
+    Ok(())
+});
+
+tokio::spawn(msg);
+Ok(())</code></pre></div></div>
+<aside class="notes"><div class="paragraph"><p>Code für das TODO, also pro Verbindung
+Socket Verbindung ist echt da, split sofort
+Rest futures</p></div></aside></section><section id="client_i_server_verbindung"><h2>Client (i) - Server Verbindung</h2><div class="ulist"><ul><li><p>Future für das Versenden von "hello para//el"</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape>TcpStream::connect(&amp;addr)
+    .and_then(|stream| {
+        println!("connected");
+
+        io::write_all(stream, "hello para//el\n").then(|result| {
+            println!("wrote to connection; success={:?}",
+                     result.is_ok());
+            Ok(())
+        })
+    })
+    .map_err(|err| {
+        println!("connection error = {:?}", err);
+    })</code></pre></div></div>
+<aside class="notes"><div class="paragraph"><p>Unterschied then/and_than &#8594; andere kombinatoren!
+and_then nur wenn kein fehler</p></div></aside></section><section id="client_ii_fehlerbehandlung"><h2>Client (ii) - Fehlerbehandlung</h2><div class="ulist"><ul><li><p>Retry mit exponential backoff</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">let number_of_connections = 100_000;
+let retry_strategy = ExponentialBackoff::from_millis(10)
+                     .map(jitter).take(3);
+
+let client = stream::iter_ok(0..number_of_connections)
+    .for_each(move |_| Retry::spawn(
+        retry_strategy.clone(),
+        action
+    ).then(|_| Ok(())));</code></pre></div></div>
+<aside class="notes"></aside></section><section id="performance"><h2>Performance</h2><div class="ulist"><ul><li><p>Es passiert nicht viel in dem Beispiel</p></li><li><p>Die meiste Zeit wird im OS verbracht (oder gewartet)</p></li><li><p>Linux Desktop (Ryzen 2700X): ~33.000 Verbindungen pro Sekunde</p><div class="ulist"><ul><li><p>&lt;25% last auf allen 16 Kernen</p></li></ul></div></li></ul></div></section><section id="ausblick_nebenlufigkeit"><h2>Ausblick Nebenläufigkeit</h2><div class="ulist"><ul><li><p><a href="https://github.com/rust-lang/rfcs/pull/2394">RFC #2394</a> async / await als Teil der Sprache</p></li></ul></div>
+<div class="listingblock"><div class="content"><pre class="highlight"><code data-noescape class="Rust language-Rust">fn main() {
+    let closure = async || {
+         println("Hello from async closure.");
+    };
+    println!("Hello from main");
+    let future = closure();
+    println!("Hello from main again");
+    futures::block_on(future);
+}</code></pre></div></div>
+<aside class="notes"><div class="paragraph"><p>Code:
+2 x "Hello from main"
+"Hello from async closure."</p></div></aside></section></section>
+<section id="zusammenfassung"><h2>Zusammenfassung</h2><div class="ulist"><ul><li><p>Rust ist für einen <em>old school</em> Entwickler gewönnungsbedürftig</p></li><li><p>Rayon und Tokio vereinfachen viele Aufgaben</p></li><li><p><code>packed-simd</code> emöglicht eine transparente Verwendung von Vektorregister</p></li><li><p>Performance ist im allgemeinen sehr gut</p></li></ul></div>
+<aside class="notes"></aside></section></div></div><script src="reveal.js-3.7.0//lib/js/head.min.js"></script><script src="reveal.js-3.7.0//js/reveal.js"></script><script>// See https://github.com/hakimel/reveal.js#configuration for a full list of configuration options
+Reveal.initialize({
+  // Display controls in the bottom right corner
+  controls: true,
+  // Display a presentation progress bar
+  progress: true,
+  // Set a per-slide timing for speaker notes, null means none
+  defaultTiming: null,
+  // Display the page number of the current slide
+  slideNumber: true,
+  // Push each slide change to the browser history
+  history: true,
+  // Enable keyboard shortcuts for navigation
+  keyboard: true,
+  // Enable the slide overview mode
+  overview: true,
+  // Vertical centering of slides
+  center: true,
+  // Enables touch navigation on devices with touch input
+  touch: true,
+  // Loop the presentation
+  loop: false,
+  // Change the presentation direction to be RTL
+  rtl: false,
+  // Randomizes the order of slides each time the presentation loads
+  shuffle: false,
+  // Turns fragments on and off globally
+  fragments: true,
+  // Flags if the presentation is running in an embedded mode,
+  // i.e. contained within a limited portion of the screen
+  embedded: false,
+  // Flags if we should show a help overlay when the questionmark
+  // key is pressed
+  help: true,
+  // Flags if speaker notes should be visible to all viewers
+  showNotes: false,
+  // Global override for autolaying embedded media (video/audio/iframe)
+  // - null: Media will only autoplay if data-autoplay is present
+  // - true: All media will autoplay, regardless of individual setting
+  // - false: No media will autoplay, regardless of individual setting
+  autoPlayMedia: null,
+  // Number of milliseconds between automatically proceeding to the
+  // next slide, disabled when set to 0, this value can be overwritten
+  // by using a data-autoslide attribute on your slides
+  autoSlide: 0,
+  // Stop auto-sliding after user input
+  autoSlideStoppable: true,
+  // Enable slide navigation via mouse wheel
+  mouseWheel: false,
+  // Hides the address bar on mobile devices
+  hideAddressBar: true,
+  // Opens links in an iframe preview overlay
+  previewLinks: false,
+  // Theme (e.g., beige, black, league, night, serif, simple, sky, solarized, white)
+  // NOTE setting the theme in the config no longer works in reveal.js 3.x
+  //theme: Reveal.getQueryHash().theme || 'solarized',
+  // Transition style (e.g., none, fade, slide, convex, concave, zoom)
+  transition: Reveal.getQueryHash().transition || 'slide',
+  // Transition speed (e.g., default, fast, slow)
+  transitionSpeed: 'default',
+  // Transition style for full page slide backgrounds (e.g., none, fade, slide, convex, concave, zoom)
+  backgroundTransition: 'fade',
+  // Number of slides away from the current that are visible
+  viewDistance: 3,
+  // Parallax background image (e.g., "'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg'")
+  parallaxBackgroundImage: '',
+  // Parallax background size in CSS syntax (e.g., "2100px 900px")
+  parallaxBackgroundSize: '',
+
+  // The "normal" size of the presentation, aspect ratio will be preserved
+  // when the presentation is scaled to fit different resolutions. Can be
+  // specified using percentage units.
+  width: 960,
+  height: 700,
+
+  // Factor of the display size that should remain empty around the content
+  margin: 0.1,
+
+  // Bounds for smallest/largest possible scale to apply to content
+  minScale: 0.2,
+  maxScale: 1.5,
+
+  // Optional libraries used to extend on reveal.js
+  dependencies: [
+      { src: 'reveal.js-3.7.0//lib/js/classList.js', condition: function() { return !document.body.classList; } },
+      { src: 'reveal.js-3.7.0//plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+      { src: 'reveal.js-3.7.0//plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+      { src: 'reveal.js-3.7.0//plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+      { src: 'reveal.js-3.7.0//plugin/zoom-js/zoom.js', async: true },
+      { src: 'reveal.js-3.7.0//plugin/notes/notes.js', async: true }
+  ]
+});</script></body></html>
