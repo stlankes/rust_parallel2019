@@ -1,0 +1,11 @@
+[package]
+name = "tokio_client"
+version = "0.1.0"
+authors = ["Jens Breitbart <jbreitbart@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+tokio = "0.1"
+tokio-retry = "0.2"
+futures = "0.1"
+time = "0.1"

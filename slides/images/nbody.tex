@@ -1,0 +1,36 @@
+\documentclass[convert={density=300,size=1080x800,outext=.png}]{standalone}
+\usepackage{siunitx}
+\usepackage{tikz}
+\usetikzlibrary{positioning,calc,fit,automata,chains,patterns,shadows,shapes,shapes.multipart,arrows,spy}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+
+\begin{document}
+\begin{tikzpicture}[spy using outlines={connect spies,magnification=6}]
+  \pgfplotstableread{nbody.dat}\nbody
+  \begin{axis}[%
+     title=Nbody; 1024 bodies; 20 iterations,
+     %use units,
+     legend style={legend pos=north east},
+     legend pos=north east,
+     minor tick num=1,
+     scaled ticks=false,
+     xmode=log,
+     log basis x=2,
+     xtick={1,2,4,8,10},
+     xticklabels={1,2,4,8,10},
+     xlabel=Number of threads,
+     %y unit=s,
+     %ylabel=Time,
+     yticklabel={\SI[round-mode=places, round-precision=1]{\tick}{s}},
+     ymin=0,ymax=150
+  ]
+  \addplot[color=red,mark=*] table[x={0},y expr=\thisrowno{1}] {\nbody};
+  \addlegendentry{Rust (naive)}
+  \addplot[color=blue,mark=triangle*] table[x={0},y expr=\thisrowno{2}] {\nbody};
+  \addlegendentry{Rust (SoA)}
+  \addplot[color=green,mark=+] table[x={0},y expr=\thisrowno{3}] {\nbody};
+  \addlegendentry{gcc 8.1 + OpenMP}
+  \end{axis}
+\end{tikzpicture}
+\end{document}
